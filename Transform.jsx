@@ -26,7 +26,10 @@ function main(thisObj) {
 
   // GROUP2
   // ======
-  var group2 = win.add("group", undefined, { name: "group2" });
+  var group2top = win.add('group')
+  group2top.orientation = 'stack'
+
+  var group2 = group2top.add("group", undefined, { name: "group2" });
   group2.orientation = "row";
   group2.alignChildren = ["left", "center"];
   group2.spacing = 10;
@@ -40,6 +43,29 @@ function main(thisObj) {
 
   var zbox = group2.add("checkbox", undefined, undefined, { name: "checkbox3" });
   zbox.text = "Z";
+
+
+  var group2Mirror = group2top.add("group", undefined, { name: "group2" });
+  group2Mirror.orientation = "row";
+  group2Mirror.alignChildren = ["left", "center"];
+  group2Mirror.spacing = 10;
+  group2Mirror.margins = 0;
+  group2Mirror.visible = false
+
+  var xboxScale = group2Mirror.add("checkbox", undefined, undefined, { name: "checkbox1" });
+  xboxScale.text = "X";
+  xboxScale.enabled = false
+
+  var yboxScale = group2Mirror.add("checkbox", undefined, undefined, { name: "checkbox2" });
+  yboxScale.text = "Y";
+  yboxScale.enabled = false
+
+  var zboxScale = group2Mirror.add("checkbox", undefined, undefined, { name: "checkbox3" });
+  zboxScale.text = "Z";
+  zboxScale.enabled = false
+
+  var fixed = group2Mirror.add('checkbox', undefined, 'Fixed')
+  fixed.value = true
 
   // GROUP3
   // ======
@@ -69,17 +95,52 @@ function main(thisObj) {
   var randomize = group4.add("button", undefined, undefined, { name: "randomize" });
   randomize.text = "Randomize";
 
+  positionBtn.onClick = function () {
+    group2.visible = true
+    group2Mirror.visible = false
+  }
+
+  rotateBtn.onClick = function () {
+    group2.visible = true
+    group2Mirror.visible = false
+  }
+
+  scaleBtn.onClick = function () {
+    group2Mirror.visible = true
+    group2.visible = false
+  }
+
   win.onResize = function () {
     win.layout.resize();
   }
 
   win.layout.layout();
 
+  fixed.onClick = function () {
+    if (!fixed.value) {
+      xboxScale.enabled = true
+      yboxScale.enabled = true
+      zboxScale.enabled = true
+    } else {
+      xboxScale.enabled = false
+      yboxScale.enabled = false
+      zboxScale.enabled = false
+    }
+  }
+
   sequence.onClick = function () {
     app.beginUndoGroup("sequence");
     try {
       if (amount.text == '') return
-      if (!xbox.value && !ybox.value && !zbox.value) return
+      // XYZどれにもチェックが入ってなかったらリターン
+      if (!scaleBtn.value) {
+        if (!xbox.value && !ybox.value && !zbox.value) return
+      } else {
+        // scaleの場合
+        if (!fixed.value) {
+          if (!xboxScale.value && !yboxScale.value && !zboxScale.value) return
+        }
+      }
       var comp = app.project.activeItem;
       var selectedLayers = comp.selectedLayers;
       var X = 0
@@ -166,7 +227,7 @@ function main(thisObj) {
           if (zbox.value) {
             if (numKeyZ == 0) {
               var value = rotateZ.value
-              rotateZ.setValue(value + parseInt(amount.text)* i)
+              rotateZ.setValue(value + parseInt(amount.text) * i)
             } else {
               var value = rotateZ.valueAtTime(comp.time, true)
               rotateZ.setValueAtTime(comp.time, value + parseInt(amount.text) * i)
@@ -175,18 +236,43 @@ function main(thisObj) {
         }
       } else {
         // scale
-        for (var i = 0; i < selectedLayers.length; i++) {
-          var selectedLater = selectedLayers[i]
-          var scale = selectedLater.property('ADBE Transform Group').property('ADBE Scale')
-          var numKey = scale.numKeys
-          if (numKey == 0) {
-            var value = scale.value
-            scale.setValue([value[0] + parseInt(amount.text) * X * i,
-            value[1] + parseInt(amount.text) * Y * i, value[2] + parseInt(amount.text) * Z * i])
-          } else {
-            var value = scale.valueAtTime(comp.time, true)
-            scale.setValueAtTime(comp.time, [value[0] + parseInt(amount.text) * X * i,
-            value[1] + parseInt(amount.text) * Y * i, value[2] + parseInt(amount.text) * Z * i])
+        var X = 0
+        var Y = 0
+        var Z = 0
+        if (xboxScale.value) X = 1
+        if (yboxScale.value) Y = 1
+        if (zboxScale.value) Z = 1
+        if (fixed.value == false) {
+          // 固定じゃない場合
+          for (var i = 0; i < selectedLayers.length; i++) {
+            var selectedLater = selectedLayers[i]
+            var scale = selectedLater.property('ADBE Transform Group').property('ADBE Scale')
+            var numKey = scale.numKeys
+            if (numKey == 0) {
+              var value = scale.value
+              scale.setValue([value[0] + parseInt(amount.text) * X * i,
+              value[1] + parseInt(amount.text) * Y * i, value[2] + parseInt(amount.text) * Z * i])
+            } else {
+              var value = scale.valueAtTime(comp.time, true)
+              scale.setValueAtTime(comp.time, [value[0] + parseInt(amount.text) * X * i,
+              value[1] + parseInt(amount.text) * Y * i, value[2] + parseInt(amount.text) * Z * i])
+            }
+          }
+        } else {
+          // Fixed(固定)の場合
+          for (var i = 0; i < selectedLayers.length; i++) {
+            var selectedLater = selectedLayers[i]
+            var scale = selectedLater.property('ADBE Transform Group').property('ADBE Scale')
+            var numKey = scale.numKeys
+            if (numKey == 0) {
+              var value = scale.value
+              scale.setValue([value[0] + parseInt(amount.text) * i,
+              value[1] + parseInt(amount.text) * i, value[2] + parseInt(amount.text) * i])
+            } else {
+              var value = scale.valueAtTime(comp.time, true)
+              scale.setValueAtTime(comp.time, [value[0] + parseInt(amount.text) * i,
+              value[1] + parseInt(amount.text) * i, value[2] + parseInt(amount.text) * i])
+            }
           }
         }
       }
@@ -195,12 +281,20 @@ function main(thisObj) {
     }
     app.endUndoGroup();
   }
-  
+
   randomize.onClick = function () {
     app.beginUndoGroup("sequence");
     try {
       if (amount.text == '') return
-      if (!xbox.value && !ybox.value && !zbox.value) return
+      // XYZどれにもチェックが入ってなかったらリターン
+      if (!scaleBtn.value) {
+        if (!xbox.value && !ybox.value && !zbox.value) return
+      } else {
+        // scaleの場合
+        if (!fixed.value) {
+          if (!xboxScale.value && !yboxScale.value && !zboxScale.value) return
+        }
+      }
       var comp = app.project.activeItem;
       var selectedLayers = comp.selectedLayers;
       var X = 0
@@ -287,7 +381,7 @@ function main(thisObj) {
           if (zbox.value) {
             if (numKeyZ == 0) {
               var value = rotateZ.value
-              rotateZ.setValue(value + parseInt(amount.text)* (generateRandomNumber() * 2 - 1))
+              rotateZ.setValue(value + parseInt(amount.text) * (generateRandomNumber() * 2 - 1))
             } else {
               var value = rotateZ.valueAtTime(comp.time, true)
               rotateZ.setValueAtTime(comp.time, value + parseInt(amount.text) * (generateRandomNumber() * 2 - 1))
@@ -296,18 +390,42 @@ function main(thisObj) {
         }
       } else {
         // scale
-        for (var i = 0; i < selectedLayers.length; i++) {
-          var selectedLater = selectedLayers[i]
-          var scale = selectedLater.property('ADBE Transform Group').property('ADBE Scale')
-          var numKey = scale.numKeys
-          if (numKey == 0) {
-            var value = scale.value
-            scale.setValue([value[0] + parseInt(amount.text) * X * (generateRandomNumber() * 2 - 1),
-            value[1] + parseInt(amount.text) * Y * (generateRandomNumber() * 2 - 1), value[2] + parseInt(amount.text) * Z * (generateRandomNumber() * 2 - 1)])
-          } else {
-            var value = scale.valueAtTime(comp.time, true)
-            scale.setValueAtTime(comp.time, [value[0] + parseInt(amount.text) * X * i,
-            value[1] + parseInt(amount.text) * Y * (generateRandomNumber() * 2 - 1), value[2] + parseInt(amount.text) * Z * (generateRandomNumber() * 2 - 1)])
+        var X = 0
+        var Y = 0
+        var Z = 0
+        if (xboxScale.value) X = 1
+        if (yboxScale.value) Y = 1
+        if (zboxScale.value) Z = 1
+        if (fixed.value == false) {
+          // 固定じゃない場合
+          for (var i = 0; i < selectedLayers.length; i++) {
+            var selectedLater = selectedLayers[i]
+            var scale = selectedLater.property('ADBE Transform Group').property('ADBE Scale')
+            var numKey = scale.numKeys
+            if (numKey == 0) {
+              var value = scale.value
+              scale.setValue([value[0] + parseInt(amount.text) * X * (generateRandomNumber() * 2 - 1),
+              value[1] + parseInt(amount.text) * Y * (generateRandomNumber() * 2 - 1), value[2] + parseInt(amount.text) * Z * (generateRandomNumber() * 2 - 1)])
+            } else {
+              var value = scale.valueAtTime(comp.time, true)
+              scale.setValueAtTime(comp.time, [value[0] + parseInt(amount.text) * X * (generateRandomNumber() * 2 - 1),
+              value[1] + parseInt(amount.text) * Y * (generateRandomNumber() * 2 - 1), value[2] + parseInt(amount.text) * Z * (generateRandomNumber() * 2 - 1)])
+            }
+          }
+        } else {
+          // Fixed(固定)の場合
+          for (var i = 0; i < selectedLayers.length; i++) {
+            var selectedLater = selectedLayers[i]
+            var scale = selectedLater.property('ADBE Transform Group').property('ADBE Scale')
+            var numKey = scale.numKeys
+            var randomNum = parseInt(amount.text) * (generateRandomNumber() * 2 - 1)
+            if (numKey == 0) {
+              var value = scale.value
+              scale.setValue([value[0] + randomNum, value[1] + randomNum, value[2] + randomNum])
+            } else {
+              var value = scale.valueAtTime(comp.time, true)
+              scale.setValueAtTime(comp.time, [value[0] + randomNum, value[1] + randomNum, value[2] + randomNum])
+            }
           }
         }
       }
