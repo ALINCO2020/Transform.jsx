@@ -141,6 +141,12 @@ function main(thisObj) {
           if (!xboxScale.value && !yboxScale.value && !zboxScale.value) return
         }
       }
+      var keyState = ScriptUI.environment.keyboardState;
+      if (keyState.altKey) {
+        var alt = -1
+      } else {
+        var alt = 1
+      }
       var comp = app.project.activeItem;
       var selectedLayers = comp.selectedLayers;
       var X = 0
@@ -161,17 +167,17 @@ function main(thisObj) {
             // 次元分割されていない場合
             if (numKey == 0) {
               var value = position.value
-              position.setValue([value[0] + parseInt(amount.text) * X * i,
-              value[1] + parseInt(amount.text) * Y * i, value[2] + parseInt(amount.text) * Z * i])
+              position.setValue([value[0] + parseInt(amount.text) * X * i * alt,
+              value[1] + parseInt(amount.text) * Y * i * alt, value[2] + parseInt(amount.text) * Z * i * alt])
             } else if (nearestKeyTime - comp.time != 0) {
               var value = position.valueAtTime(comp.time, true)
-              position.setValueAtTime(comp.time, [value[0] + parseInt(amount.text) * X * i,
-              value[1] + parseInt(amount.text) * Y * i, value[2] + parseInt(amount.text) * Z * i])
+              position.setValueAtTime(comp.time, [value[0] + parseInt(amount.text) * X * i * alt,
+              value[1] + parseInt(amount.text) * Y * i * alt, value[2] + parseInt(amount.text) * Z * i * alt])
             } else {
               for (var j = 1; j <= numKey; j++) {
                 var value = position.valueAtTime(position.keyTime(j), true)
-                position.setValueAtTime(position.keyTime(j), [value[0] + parseInt(amount.text) * X * i,
-                value[1] + parseInt(amount.text) * Y * i, value[2] + parseInt(amount.text) * Z * i])
+                position.setValueAtTime(position.keyTime(j), [value[0] + parseInt(amount.text) * X * i * alt,
+                value[1] + parseInt(amount.text) * Y * i * alt, value[2] + parseInt(amount.text) * Z * i * alt])
               }
             }
           } else {
@@ -181,20 +187,20 @@ function main(thisObj) {
               value.push(selectedLater.property("ADBE Transform Group").property("ADBE Position_0").value)
               value.push(selectedLater.property("ADBE Transform Group").property("ADBE Position_1").value)
               value.push(selectedLater.property("ADBE Transform Group").property("ADBE Position_2").value)
-              selectedLater.property("ADBE Transform Group").property("ADBE Position_0").setValue(value[0] + parseInt(amount.text) * X * i)
-              selectedLater.property("ADBE Transform Group").property("ADBE Position_1").setValue(value[1] + parseInt(amount.text) * Y * i)
+              selectedLater.property("ADBE Transform Group").property("ADBE Position_0").setValue(value[0] + parseInt(amount.text) * X * i * alt)
+              selectedLater.property("ADBE Transform Group").property("ADBE Position_1").setValue(value[1] + parseInt(amount.text) * Y * i * alt)
               if (selectedLater.threeDLayer) {
-                selectedLater.property("ADBE Transform Group").property("ADBE Position_2").setValue(value[2] + parseInt(amount.text) * Z * i)
+                selectedLater.property("ADBE Transform Group").property("ADBE Position_2").setValue(value[2] + parseInt(amount.text) * Z * i * alt)
               }
             } else if (nearestKeyTime - comp.time != 0) {
               var value = []
               value.push(selectedLater.property("ADBE Transform Group").property("ADBE Position_0").valueAtTime(comp.time, true))
               value.push(selectedLater.property("ADBE Transform Group").property("ADBE Position_1").valueAtTime(comp.time, true))
               value.push(selectedLater.property("ADBE Transform Group").property("ADBE Position_2").valueAtTime(comp.time, true))
-              selectedLater.property("ADBE Transform Group").property("ADBE Position_0").setValueAtTime(comp.time, value[0] + parseInt(amount.text) * X * i)
-              selectedLater.property("ADBE Transform Group").property("ADBE Position_1").setValueAtTime(comp.time, value[1] + parseInt(amount.text) * Y * i)
+              selectedLater.property("ADBE Transform Group").property("ADBE Position_0").setValueAtTime(comp.time, value[0] + parseInt(amount.text) * X * i * alt)
+              selectedLater.property("ADBE Transform Group").property("ADBE Position_1").setValueAtTime(comp.time, value[1] + parseInt(amount.text) * Y * i * alt)
               if (selectedLater.threeDLayer) {
-                selectedLater.property("ADBE Transform Group").property("ADBE Position_2").setValueAtTime(comp.time, value[2] + parseInt(amount.text) * Z * i)
+                selectedLater.property("ADBE Transform Group").property("ADBE Position_2").setValueAtTime(comp.time, value[2] + parseInt(amount.text) * Z * i * alt)
               }
             } else {
               for (var j = 1; j <= numKey; j++) {
@@ -202,10 +208,10 @@ function main(thisObj) {
                 value.push(selectedLater.property("ADBE Transform Group").property("ADBE Position_0").valueAtTime(position.keyTime(j), true))
                 value.push(selectedLater.property("ADBE Transform Group").property("ADBE Position_1").valueAtTime(position.keyTime(j), true))
                 value.push(selectedLater.property("ADBE Transform Group").property("ADBE Position_2").valueAtTime(position.keyTime(j), true))
-                selectedLater.property("ADBE Transform Group").property("ADBE Position_0").setValueAtTime(position.keyTime(j), value[0] + parseInt(amount.text) * X * i)
-                selectedLater.property("ADBE Transform Group").property("ADBE Position_1").setValueAtTime(position.keyTime(j), value[1] + parseInt(amount.text) * Y * i)
+                selectedLater.property("ADBE Transform Group").property("ADBE Position_0").setValueAtTime(position.keyTime(j), value[0] + parseInt(amount.text) * X * i * alt)
+                selectedLater.property("ADBE Transform Group").property("ADBE Position_1").setValueAtTime(position.keyTime(j), value[1] + parseInt(amount.text) * Y * i * alt)
                 if (selectedLater.threeDLayer) {
-                  selectedLater.property("ADBE Transform Group").property("ADBE Position_2").setValueAtTime(position.keyTime(j), value[2] + parseInt(amount.text) * Z * i)
+                  selectedLater.property("ADBE Transform Group").property("ADBE Position_2").setValueAtTime(position.keyTime(j), value[2] + parseInt(amount.text) * Z * i * alt)
                 }
               }
             }
@@ -229,14 +235,14 @@ function main(thisObj) {
           if (xbox.value) {
             if (numKeyX == 0) {
               var value = rotateX.value
-              rotateX.setValue(value + parseInt(amount.text) * i)
+              rotateX.setValue(value + parseInt(amount.text) * i * alt)
             } else if (nearestKeyTimeX - comp.time != 0) {
               var value = rotateX.valueAtTime(comp.time, true)
-              rotateX.setValueAtTime(comp.time, value + parseInt(amount.text) * i)
+              rotateX.setValueAtTime(comp.time, value + parseInt(amount.text) * i * alt)
             } else {
               for (var j = 1; j <= numKeyX; j++) {
                 var value = rotateX.valueAtTime(rotateX.keyTime(j), true)
-                rotateX.setValueAtTime(rotateX.keyTime(j), value + parseInt(amount.text) * i)
+                rotateX.setValueAtTime(rotateX.keyTime(j), value + parseInt(amount.text) * i * alt)
               }
             }
           }
@@ -244,14 +250,14 @@ function main(thisObj) {
           if (ybox.value) {
             if (numKeyY == 0) {
               var value = rotateY.value
-              rotateY.setValue(value + parseInt(amount.text) * i)
+              rotateY.setValue(value + parseInt(amount.text) * i * alt)
             } else if (nearestKeyTimeY - comp.time != 0) {
               var value = rotateY.valueAtTime(comp.time, true)
-              rotateY.setValueAtTime(comp.time, value + parseInt(amount.text) * i)
+              rotateY.setValueAtTime(comp.time, value + parseInt(amount.text) * i * alt)
             } else {
               for (var j = 1; j <= numKeyY; j++) {
                 var value = rotateY.valueAtTime(rotateY.keyTime(j), true)
-                rotateY.setValueAtTime(rotateY.keyTime(j), value + parseInt(amount.text) * i)
+                rotateY.setValueAtTime(rotateY.keyTime(j), value + parseInt(amount.text) * i * alt)
               }
             }
           }
@@ -259,14 +265,14 @@ function main(thisObj) {
           if (zbox.value) {
             if (numKeyZ == 0) {
               var value = rotateZ.value
-              rotateZ.setValue(value + parseInt(amount.text) * i)
+              rotateZ.setValue(value + parseInt(amount.text) * i * alt)
             } else if (nearestKeyTimeZ - comp.time != 0) {
               var value = rotateZ.valueAtTime(comp.time, true)
-              rotateZ.setValueAtTime(comp.time, value + parseInt(amount.text) * i)
+              rotateZ.setValueAtTime(comp.time, value + parseInt(amount.text) * i * alt)
             } else {
               for (var j = 1; j <= numKeyZ; j++) {
                 var value = rotateZ.valueAtTime(rotateZ.keyTime(j), true)
-                rotateZ.setValueAtTime(rotateZ.keyTime(j), value + parseInt(amount.text) * i)
+                rotateZ.setValueAtTime(rotateZ.keyTime(j), value + parseInt(amount.text) * i * alt)
               }
             }
           }
@@ -288,17 +294,17 @@ function main(thisObj) {
             if (numKey != 0) var nearestKeyTime = scale.keyTime(scale.nearestKeyIndex(comp.time))
             if (numKey == 0) {
               var value = scale.value
-              scale.setValue([value[0] + parseInt(amount.text) * X * i,
-              value[1] + parseInt(amount.text) * Y * i, value[2] + parseInt(amount.text) * Z * i])
+              scale.setValue([value[0] + parseInt(amount.text) * X * i * alt,
+              value[1] + parseInt(amount.text) * Y * i * alt, value[2] + parseInt(amount.text) * Z * i * alt])
             } else if (nearestKeyTime - comp.time != 0) {
               var value = scale.valueAtTime(comp.time, true)
-              scale.setValueAtTime(comp.time, [value[0] + parseInt(amount.text) * X * i,
-              value[1] + parseInt(amount.text) * Y * i, value[2] + parseInt(amount.text) * Z * i])
+              scale.setValueAtTime(comp.time, [value[0] + parseInt(amount.text) * X * i * alt,
+              value[1] + parseInt(amount.text) * Y * i * alt, value[2] + parseInt(amount.text) * Z * i * alt])
             } else {
               for (var j = 1; j <= numKey; j++) {
                 var value = scale.valueAtTime(scale.keyTime(j), true)
-                scale.setValueAtTime(scale.keyTime(j), [value[0] + parseInt(amount.text) * X * i,
-                value[1] + parseInt(amount.text) * Y * i, value[2] + parseInt(amount.text) * Z * i])
+                scale.setValueAtTime(scale.keyTime(j), [value[0] + parseInt(amount.text) * X * i * alt,
+                value[1] + parseInt(amount.text) * Y * i * alt, value[2] + parseInt(amount.text) * Z * i * alt])
               }
             }
           }
@@ -311,17 +317,17 @@ function main(thisObj) {
             if (numKey != 0) var nearestKeyTime = scale.keyTime(scale.nearestKeyIndex(comp.time))
             if (numKey == 0) {
               var value = scale.value
-              scale.setValue([value[0] + parseInt(amount.text) * i,
-              value[1] + parseInt(amount.text) * i, value[2] + parseInt(amount.text) * i])
+              scale.setValue([value[0] + parseInt(amount.text) * i * alt,
+              value[1] + parseInt(amount.text) * i * alt, value[2] + parseInt(amount.text) * i * alt])
             } else if (nearestKeyTime - comp.time != 0) {
               var value = scale.valueAtTime(comp.time, true)
-              scale.setValueAtTime(comp.time, [value[0] + parseInt(amount.text) * i,
-              value[1] + parseInt(amount.text) * i, value[2] + parseInt(amount.text) * i])
+              scale.setValueAtTime(comp.time, [value[0] + parseInt(amount.text) * i * alt,
+              value[1] + parseInt(amount.text) * i * alt, value[2] + parseInt(amount.text) * i * alt])
             } else {
               for (var j = 1; j <= numKey; j++) {
                 var value = scale.valueAtTime(scale.keyTime(j), true)
-                scale.setValueAtTime(scale.keyTime(j), [value[0] + parseInt(amount.text) * i,
-                value[1] + parseInt(amount.text) * i, value[2] + parseInt(amount.text) * i])
+                scale.setValueAtTime(scale.keyTime(j), [value[0] + parseInt(amount.text) * i * alt,
+                value[1] + parseInt(amount.text) * i * alt, value[2] + parseInt(amount.text) * i * alt])
               }
             }
           }
