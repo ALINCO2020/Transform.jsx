@@ -169,7 +169,8 @@ function main(thisObj) {
               var value = position.value
               position.setValue([value[0] + parseInt(amount.text) * X * i * alt,
               value[1] + parseInt(amount.text) * Y * i * alt, value[2] + parseInt(amount.text) * Z * i * alt])
-            } else if (nearestKeyTime - comp.time != 0) {
+            // ctrlクリックならすべてのキーフレームを更新しない
+            } else if (nearestKeyTime - comp.time != 0 || keyState.ctrlKey) {
               var value = position.valueAtTime(comp.time, true)
               position.setValueAtTime(comp.time, [value[0] + parseInt(amount.text) * X * i * alt,
               value[1] + parseInt(amount.text) * Y * i * alt, value[2] + parseInt(amount.text) * Z * i * alt])
@@ -192,7 +193,7 @@ function main(thisObj) {
               if (selectedLater.threeDLayer) {
                 selectedLater.property("ADBE Transform Group").property("ADBE Position_2").setValue(value[2] + parseInt(amount.text) * Z * i * alt)
               }
-            } else if (nearestKeyTime - comp.time != 0) {
+            } else if (nearestKeyTime - comp.time != 0 || keyState.ctrlKey) {
               var value = []
               value.push(selectedLater.property("ADBE Transform Group").property("ADBE Position_0").valueAtTime(comp.time, true))
               value.push(selectedLater.property("ADBE Transform Group").property("ADBE Position_1").valueAtTime(comp.time, true))
@@ -236,7 +237,7 @@ function main(thisObj) {
             if (numKeyX == 0) {
               var value = rotateX.value
               rotateX.setValue(value + parseInt(amount.text) * i * alt)
-            } else if (nearestKeyTimeX - comp.time != 0) {
+            } else if (nearestKeyTimeX - comp.time != 0 || keyState.ctrlKey) {
               var value = rotateX.valueAtTime(comp.time, true)
               rotateX.setValueAtTime(comp.time, value + parseInt(amount.text) * i * alt)
             } else {
@@ -251,7 +252,7 @@ function main(thisObj) {
             if (numKeyY == 0) {
               var value = rotateY.value
               rotateY.setValue(value + parseInt(amount.text) * i * alt)
-            } else if (nearestKeyTimeY - comp.time != 0) {
+            } else if (nearestKeyTimeY - comp.time != 0 || keyState.ctrlKey) {
               var value = rotateY.valueAtTime(comp.time, true)
               rotateY.setValueAtTime(comp.time, value + parseInt(amount.text) * i * alt)
             } else {
@@ -266,7 +267,7 @@ function main(thisObj) {
             if (numKeyZ == 0) {
               var value = rotateZ.value
               rotateZ.setValue(value + parseInt(amount.text) * i * alt)
-            } else if (nearestKeyTimeZ - comp.time != 0) {
+            } else if (nearestKeyTimeZ - comp.time != 0 || keyState.ctrlKey) {
               var value = rotateZ.valueAtTime(comp.time, true)
               rotateZ.setValueAtTime(comp.time, value + parseInt(amount.text) * i * alt)
             } else {
@@ -296,7 +297,7 @@ function main(thisObj) {
               var value = scale.value
               scale.setValue([value[0] + parseInt(amount.text) * X * i * alt,
               value[1] + parseInt(amount.text) * Y * i * alt, value[2] + parseInt(amount.text) * Z * i * alt])
-            } else if (nearestKeyTime - comp.time != 0) {
+            } else if (nearestKeyTime - comp.time != 0 || keyState.ctrlKey) {
               var value = scale.valueAtTime(comp.time, true)
               scale.setValueAtTime(comp.time, [value[0] + parseInt(amount.text) * X * i * alt,
               value[1] + parseInt(amount.text) * Y * i * alt, value[2] + parseInt(amount.text) * Z * i * alt])
@@ -319,7 +320,7 @@ function main(thisObj) {
               var value = scale.value
               scale.setValue([value[0] + parseInt(amount.text) * i * alt,
               value[1] + parseInt(amount.text) * i * alt, value[2] + parseInt(amount.text) * i * alt])
-            } else if (nearestKeyTime - comp.time != 0) {
+            } else if (nearestKeyTime - comp.time != 0 || keyState.ctrlKey) {
               var value = scale.valueAtTime(comp.time, true)
               scale.setValueAtTime(comp.time, [value[0] + parseInt(amount.text) * i * alt,
               value[1] + parseInt(amount.text) * i * alt, value[2] + parseInt(amount.text) * i * alt])
@@ -524,13 +525,14 @@ function main(thisObj) {
             if (numKey == 0) {
               var value = scale.value
               scale.setValue([value[0] + randomNum, value[1] + randomNum, value[2] + randomNum])
-            }  else if (nearestKeyTime - comp.time != 0)  {
+            } else if (nearestKeyTime - comp.time != 0) {
               var value = scale.valueAtTime(comp.time, true)
               scale.setValueAtTime(comp.time, [value[0] + randomNum, value[1] + randomNum, value[2] + randomNum])
             } else {
               for (var j = 1; j <= numKey; j++) {
                 var value = scale.valueAtTime(scale.keyTime(j), true)
-                scale.setValueAtTime(scale.keyTime(j), [value[0] + randomNum, value[1] + randomNum, value[2] + randomNum])}
+                scale.setValueAtTime(scale.keyTime(j), [value[0] + randomNum, value[1] + randomNum, value[2] + randomNum])
+              }
             }
           }
         }
