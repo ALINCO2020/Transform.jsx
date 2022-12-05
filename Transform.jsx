@@ -353,6 +353,7 @@ function main(thisObj) {
           if (!xboxScale.value && !yboxScale.value && !zboxScale.value) return
         }
       }
+      var keyState = ScriptUI.environment.keyboardState;
       var comp = app.project.activeItem;
       var selectedLayers = comp.selectedLayers;
       var X = 0
@@ -369,21 +370,24 @@ function main(thisObj) {
           var numKey = position.numKeys
           if (numKey != 0) var nearestKeyTime = position.keyTime(position.nearestKeyIndex(comp.time))
           if (zbox.value && !selectedLater.threeDLayer) selectedLater.threeDLayer = true
+          var randX = generateRandomNumber() * 2 - 1
+          var randY = generateRandomNumber() * 2 - 1
+          var randZ = generateRandomNumber() * 2 - 1
           if (!position.dimensionsSeparated) {
             // 次元分割されていない場合
             if (numKey == 0) {
               var value = position.value
-              position.setValue([value[0] + parseInt(amount.text) * X * (generateRandomNumber() * 2 - 1),
-              value[1] + parseInt(amount.text) * Y * (generateRandomNumber() * 2 - 1), value[2] + parseInt(amount.text) * Z * (generateRandomNumber() * 2 - 1)])
-            } else if (nearestKeyTime - comp.time != 0) {
+              position.setValue([value[0] + parseInt(amount.text) * X * randX,
+              value[1] + parseInt(amount.text) * Y * randY, value[2] + parseInt(amount.text) * Z * randZ])
+            } else if (nearestKeyTime - comp.time != 0 || keyState.ctrlKey) {
               var value = position.valueAtTime(comp.time, true)
-              position.setValueAtTime(comp.time, [value[0] + parseInt(amount.text) * X * (generateRandomNumber() * 2 - 1),
-              value[1] + parseInt(amount.text) * Y * (generateRandomNumber() * 2 - 1), value[2] + parseInt(amount.text) * Z * (generateRandomNumber() * 2 - 1)])
+              position.setValueAtTime(comp.time, [value[0] + parseInt(amount.text) * X * randX,
+              value[1] + parseInt(amount.text) * Y * randY, value[2] + parseInt(amount.text) * Z * randZ])
             } else {
               for (var j = 1; j <= numKey; j++) {
                 var value = position.valueAtTime(position.keyTime(j), true)
-                position.setValueAtTime(position.keyTime(j), [value[0] + parseInt(amount.text) * X * (generateRandomNumber() * 2 - 1),
-                value[1] + parseInt(amount.text) * Y * (generateRandomNumber() * 2 - 1), value[2] + parseInt(amount.text) * Z * (generateRandomNumber() * 2 - 1)])
+                position.setValueAtTime(position.keyTime(j), [value[0] + parseInt(amount.text) * X * randX,
+                value[1] + parseInt(amount.text) * Y * randY, value[2] + parseInt(amount.text) * Z * randZ])
               }
             }
           } else {
@@ -393,20 +397,20 @@ function main(thisObj) {
               value.push(selectedLater.property("ADBE Transform Group").property("ADBE Position_0").value)
               value.push(selectedLater.property("ADBE Transform Group").property("ADBE Position_1").value)
               value.push(selectedLater.property("ADBE Transform Group").property("ADBE Position_2").value)
-              selectedLater.property("ADBE Transform Group").property("ADBE Position_0").setValue(value[0] + parseInt(amount.text) * X * (generateRandomNumber() * 2 - 1))
-              selectedLater.property("ADBE Transform Group").property("ADBE Position_1").setValue(value[1] + parseInt(amount.text) * Y * (generateRandomNumber() * 2 - 1))
+              selectedLater.property("ADBE Transform Group").property("ADBE Position_0").setValue(value[0] + parseInt(amount.text) * X * randX)
+              selectedLater.property("ADBE Transform Group").property("ADBE Position_1").setValue(value[1] + parseInt(amount.text) * Y * randY)
               if (selectedLater.threeDLayer) {
-                selectedLater.property("ADBE Transform Group").property("ADBE Position_2").setValue(value[2] + parseInt(amount.text) * Z * (generateRandomNumber() * 2 - 1))
+                selectedLater.property("ADBE Transform Group").property("ADBE Position_2").setValue(value[2] + parseInt(amount.text) * Z * randZ)
               }
-            } else if (nearestKeyTime - comp.time != 0) {
+            } else if (nearestKeyTime - comp.time != 0 || keyState.ctrlKey) {
               var value = []
               value.push(selectedLater.property("ADBE Transform Group").property("ADBE Position_0").valueAtTime(comp.time, true))
               value.push(selectedLater.property("ADBE Transform Group").property("ADBE Position_1").valueAtTime(comp.time, true))
               value.push(selectedLater.property("ADBE Transform Group").property("ADBE Position_2").valueAtTime(comp.time, true))
-              selectedLater.property("ADBE Transform Group").property("ADBE Position_0").setValueAtTime(comp.time, value[0] + parseInt(amount.text) * X * (generateRandomNumber() * 2 - 1))
-              selectedLater.property("ADBE Transform Group").property("ADBE Position_1").setValueAtTime(comp.time, value[1] + parseInt(amount.text) * Y * (generateRandomNumber() * 2 - 1))
+              selectedLater.property("ADBE Transform Group").property("ADBE Position_0").setValueAtTime(comp.time, value[0] + parseInt(amount.text) * X * randX)
+              selectedLater.property("ADBE Transform Group").property("ADBE Position_1").setValueAtTime(comp.time, value[1] + parseInt(amount.text) * Y * randY)
               if (selectedLater.threeDLayer) {
-                selectedLater.property("ADBE Transform Group").property("ADBE Position_2").setValueAtTime(comp.time, value[2] + parseInt(amount.text) * Z * (generateRandomNumber() * 2 - 1))
+                selectedLater.property("ADBE Transform Group").property("ADBE Position_2").setValueAtTime(comp.time, value[2] + parseInt(amount.text) * Z * randZ)
               }
             } else {
               for (var j = 1; j <= numKey; j++) {
@@ -414,10 +418,10 @@ function main(thisObj) {
                 value.push(selectedLater.property("ADBE Transform Group").property("ADBE Position_0").valueAtTime(position.keyTime(j), true))
                 value.push(selectedLater.property("ADBE Transform Group").property("ADBE Position_1").valueAtTime(position.keyTime(j), true))
                 value.push(selectedLater.property("ADBE Transform Group").property("ADBE Position_2").valueAtTime(position.keyTime(j), true))
-                selectedLater.property("ADBE Transform Group").property("ADBE Position_0").setValueAtTime(position.keyTime(j), value[0] + parseInt(amount.text) * X * (generateRandomNumber() * 2 - 1))
-                selectedLater.property("ADBE Transform Group").property("ADBE Position_1").setValueAtTime(position.keyTime(j), value[1] + parseInt(amount.text) * Y * (generateRandomNumber() * 2 - 1))
+                selectedLater.property("ADBE Transform Group").property("ADBE Position_0").setValueAtTime(position.keyTime(j), value[0] + parseInt(amount.text) * X * randX)
+                selectedLater.property("ADBE Transform Group").property("ADBE Position_1").setValueAtTime(position.keyTime(j), value[1] + parseInt(amount.text) * Y * randY)
                 if (selectedLater.threeDLayer) {
-                  selectedLater.property("ADBE Transform Group").property("ADBE Position_2").setValueAtTime(position.keyTime(j), value[2] + parseInt(amount.text) * Z * (generateRandomNumber() * 2 - 1))
+                  selectedLater.property("ADBE Transform Group").property("ADBE Position_2").setValueAtTime(position.keyTime(j), value[2] + parseInt(amount.text) * Z * randZ)
                 }
               }
             }
@@ -442,7 +446,7 @@ function main(thisObj) {
             if (numKeyX == 0) {
               var value = rotateX.value
               rotateX.setValue(value + parseInt(amount.text) * (generateRandomNumber() * 2 - 1))
-            } else if (nearestKeyTimeX - comp.time != 0) {
+            } else if (nearestKeyTimeX - comp.time != 0 || keyState.ctrlKey) {
               var value = rotateX.valueAtTime(comp.time, true)
               rotateX.setValueAtTime(comp.time, value + parseInt(amount.text) * (generateRandomNumber() * 2 - 1))
             } else {
@@ -457,7 +461,7 @@ function main(thisObj) {
             if (numKeyY == 0) {
               var value = rotateY.value
               rotateY.setValue(value + parseInt(amount.text) * (generateRandomNumber() * 2 - 1))
-            } else if (nearestKeyTimeY - comp.time != 0) {
+            } else if (nearestKeyTimeY - comp.time != 0 || keyState.ctrlKey) {
               var value = rotateY.valueAtTime(comp.time, true)
               rotateY.setValueAtTime(comp.time, value + parseInt(amount.text) * (generateRandomNumber() * 2 - 1))
             } else {
@@ -472,7 +476,7 @@ function main(thisObj) {
             if (numKeyZ == 0) {
               var value = rotateZ.value
               rotateZ.setValue(value + parseInt(amount.text) * (generateRandomNumber() * 2 - 1))
-            } else if (nearestKeyTimeZ - comp.time != 0) {
+            } else if (nearestKeyTimeZ - comp.time != 0 || keyState.ctrlKey) {
               var value = rotateZ.valueAtTime(comp.time, true)
               rotateZ.setValueAtTime(comp.time, value + parseInt(amount.text) * (generateRandomNumber() * 2 - 1))
             } else {
@@ -502,7 +506,7 @@ function main(thisObj) {
               var value = scale.value
               scale.setValue([value[0] + parseInt(amount.text) * X * (generateRandomNumber() * 2 - 1),
               value[1] + parseInt(amount.text) * Y * (generateRandomNumber() * 2 - 1), value[2] + parseInt(amount.text) * Z * (generateRandomNumber() * 2 - 1)])
-            } else if (nearestKeyTime - comp.time != 0) {
+            } else if (nearestKeyTime - comp.time != 0 || keyState.ctrlKey) {
               var value = scale.valueAtTime(comp.time, true)
               scale.setValueAtTime(comp.time, [value[0] + parseInt(amount.text) * X * (generateRandomNumber() * 2 - 1),
               value[1] + parseInt(amount.text) * Y * (generateRandomNumber() * 2 - 1), value[2] + parseInt(amount.text) * Z * (generateRandomNumber() * 2 - 1)])
@@ -525,7 +529,7 @@ function main(thisObj) {
             if (numKey == 0) {
               var value = scale.value
               scale.setValue([value[0] + randomNum, value[1] + randomNum, value[2] + randomNum])
-            } else if (nearestKeyTime - comp.time != 0) {
+            } else if (nearestKeyTime - comp.time != 0 || keyState.ctrlKey) {
               var value = scale.valueAtTime(comp.time, true)
               scale.setValueAtTime(comp.time, [value[0] + randomNum, value[1] + randomNum, value[2] + randomNum])
             } else {
