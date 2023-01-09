@@ -128,6 +128,49 @@ function main(thisObj) {
     }
   }
 
+  /**
+ * ポジションを設定する関数
+ * @param {*} layer レイヤー
+ * @param {*} XYarray 配列[x, y, z]
+ * @param {boolean} isSetValueAtTime setValueAtTimeを使うかどうか
+ * @param {*} time setValueAtTimeを使う場合の時間
+ */
+  function setPosition(layer, XYZarray, isSetValueAtTime, time) {
+    try {
+      var x = XYZarray[0]
+      var y = XYZarray[1]
+      var z = XYZarray[2]
+      var position = layer.property('ADBE Transform Group').property('ADBE Position')
+      // setValueを使う場合
+      if (!isSetValueAtTime) {
+        // 次元分割されていない場合
+        if (!position.dimensionsSeparated) {
+          position.setValue([x, y, z])
+        } else {// 次元分割されている場合
+          layer.property("ADBE Transform Group").property("ADBE Position_0").setValue(x)
+          layer.property("ADBE Transform Group").property("ADBE Position_1").setValue(y)
+          if (layer.threeDLayer) {
+            layer.property("ADBE Transform Group").property("ADBE Position_2").setValue(z)
+          }
+        }
+      } else {// setValueAtTimeを使う場合
+        // 次元分割されていない場合
+        if (!position.dimensionsSeparated) {
+          position.setValueAtTime(time, [x, y, z])
+        } else {// 次元分割されている場合
+          layer.property("ADBE Transform Group").property("ADBE Position_0").setValueAtTime(time, x)
+          layer.property("ADBE Transform Group").property("ADBE Position_1").setValueAtTime(time, y)
+          if (layer.threeDLayer) {
+            layer.property("ADBE Transform Group").property("ADBE Position_2").setValueAtTime(time, z)
+          }
+
+        }
+      }
+    } catch (e) {
+      alert(e.message + e.line)
+    }
+  }
+
   sequence.onClick = function () {
     app.beginUndoGroup("sequence");
     try {
@@ -142,6 +185,7 @@ function main(thisObj) {
         }
       }
       var keyState = ScriptUI.environment.keyboardState;
+      // Altクリックなら数字反転
       if (keyState.altKey) {
         var alt = -1
       } else {
@@ -155,95 +199,117 @@ function main(thisObj) {
       if (xbox.value) X = 1
       if (ybox.value) Y = 1
       if (zbox.value) Z = 1
-      if (positionBtn.value) {
-        // position
-        for (var i = 0; i < selectedLayers.length; i++) {
-          var selectedLater = selectedLayers[i]
-          var position = selectedLater.property('ADBE Transform Group').property('ADBE Position')
-          var numKey = position.numKeys
-          if (numKey != 0) var nearestKeyTime = position.keyTime(position.nearestKeyIndex(comp.time))
-          if (zbox.value && !selectedLater.threeDLayer) selectedLater.threeDLayer = true
-          if (!position.dimensionsSeparated) {
-            // 次元分割されていない場合
+      for (var i = 0; i < selectedLayers.length; i++) {
+        var selectedLayer = selectedLayers[i]
+        // Shiftクリックなら全部同じだけずらす
+        if (keyState.shiftKey) {
+          var tmp_i = 1
+        } else {
+          var tmp_i = i
+        }
+        if (positionBtn.value) {
+          // position
+          var position = selectedLayer.property('ADBE Transform Group').property('ADBE Position')
+          if (zbox.value && !selectedLayer.threeDLayer) selectedLayer.threeDLayer = true
+
+          if (!position.dimensionsSeparated) {// 次元分割されていない場合
+            var numKey = position.numKeys
+            if (numKey != 0) var nearestKeyTime = position.keyTime(position.nearestKeyIndex(comp.time))
+            // キーフレームがない場合
             if (numKey == 0) {
               var value = position.value
-              position.setValue([value[0] + parseInt(amount.text) * X * i * alt,
-              value[1] + parseInt(amount.text) * Y * i * alt, value[2] + parseInt(amount.text) * Z * i * alt])
-            // ctrlクリックならすべてのキーフレームを更新しない
+              setPosition(selectedLayer, [
+                value[0] + parseInt(amount.text) * X * tmp_i * alt,
+                value[1] + parseInt(amount.text) * Y * tmp_i * alt,
+                value[2] + parseInt(amount.text) * Z * tmp_i * alt], false)
+              // ctrlクリックならすべてのキーフレームを更新しない
             } else if (nearestKeyTime - comp.time != 0 || keyState.ctrlKey) {
               var value = position.valueAtTime(comp.time, true)
-              position.setValueAtTime(comp.time, [value[0] + parseInt(amount.text) * X * i * alt,
-              value[1] + parseInt(amount.text) * Y * i * alt, value[2] + parseInt(amount.text) * Z * i * alt])
+              setPosition(selectedLayer, [
+                value[0] + parseInt(amount.text) * X * tmp_i * alt,
+                value[1] + parseInt(amount.text) * Y * tmp_i * alt,
+                value[2] + parseInt(amount.text) * Z * tmp_i * alt], true, comp.time)
+              // 全てのキーフレームを更新
             } else {
               for (var j = 1; j <= numKey; j++) {
                 var value = position.valueAtTime(position.keyTime(j), true)
-                position.setValueAtTime(position.keyTime(j), [value[0] + parseInt(amount.text) * X * i * alt,
-                value[1] + parseInt(amount.text) * Y * i * alt, value[2] + parseInt(amount.text) * Z * i * alt])
+                setPosition(selectedLayer, [
+                  value[0] + parseInt(amount.text) * X * tmp_i * alt,
+                  value[1] + parseInt(amount.text) * Y * tmp_i * alt,
+                  value[2] + parseInt(amount.text) * Z * tmp_i * alt], true, position.keyTime(j))
               }
             }
-          } else {
-            // 次元分割されている場合
-            if (numKey == 0) {
-              var value = []
-              value.push(selectedLater.property("ADBE Transform Group").property("ADBE Position_0").value)
-              value.push(selectedLater.property("ADBE Transform Group").property("ADBE Position_1").value)
-              value.push(selectedLater.property("ADBE Transform Group").property("ADBE Position_2").value)
-              selectedLater.property("ADBE Transform Group").property("ADBE Position_0").setValue(value[0] + parseInt(amount.text) * X * i * alt)
-              selectedLater.property("ADBE Transform Group").property("ADBE Position_1").setValue(value[1] + parseInt(amount.text) * Y * i * alt)
-              if (selectedLater.threeDLayer) {
-                selectedLater.property("ADBE Transform Group").property("ADBE Position_2").setValue(value[2] + parseInt(amount.text) * Z * i * alt)
+          } else {// 次元分割されている場合 意味分かんねえええええええええええええええええええうおおおおおおおおおおおおおおおおおおおおおおおおおおお
+            var positions = []
+            var numKeys = []
+            var nearestKeyTimes = []
+            for (var j = 0; j < 3; j++) {
+              positions.push(selectedLayer.property('ADBE Transform Group').property('ADBE Position_' + String(j)))
+              numKeys.push(positions[j].numKeys)
+              if (numKeys[j] != 0) {
+                nearestKeyTimes.push(positions[j].keyTime(positions[j].nearestKeyIndex(comp.time)))
               }
-            } else if (nearestKeyTime - comp.time != 0 || keyState.ctrlKey) {
-              var value = []
-              value.push(selectedLater.property("ADBE Transform Group").property("ADBE Position_0").valueAtTime(comp.time, true))
-              value.push(selectedLater.property("ADBE Transform Group").property("ADBE Position_1").valueAtTime(comp.time, true))
-              value.push(selectedLater.property("ADBE Transform Group").property("ADBE Position_2").valueAtTime(comp.time, true))
-              selectedLater.property("ADBE Transform Group").property("ADBE Position_0").setValueAtTime(comp.time, value[0] + parseInt(amount.text) * X * i * alt)
-              selectedLater.property("ADBE Transform Group").property("ADBE Position_1").setValueAtTime(comp.time, value[1] + parseInt(amount.text) * Y * i * alt)
-              if (selectedLater.threeDLayer) {
-                selectedLater.property("ADBE Transform Group").property("ADBE Position_2").setValueAtTime(comp.time, value[2] + parseInt(amount.text) * Z * i * alt)
+            }
+            // キーフレームがない場合
+            if (numKeys[0] == 0) {
+              setPosition(selectedLayer, [
+                positions[0].value + parseInt(amount.text) * X * tmp_i * alt,
+                positions[1].value + parseInt(amount.text) * Y * tmp_i * alt,
+                positions[2].value + parseInt(amount.text) * Z * tmp_i * alt], false)
+              // ctrlクリックならすべてのキーフレームを更新しない
+            } else if (nearestKeyTimes[0] - comp.time != 0 || keyState.ctrlKey) {
+              if (selectedLayer.threeDLayer) {
+                var XYZarray = [
+                  positions[0].valueAtTime(comp.time, true) + parseInt(amount.text) * X * tmp_i * alt,
+                  positions[1].valueAtTime(comp.time, true) + parseInt(amount.text) * Y * tmp_i * alt,
+                  positions[2].valueAtTime(comp.time, true) + parseInt(amount.text) * Z * tmp_i * alt]
+              } else {
+                var XYZarray = [
+                  positions[0].valueAtTime(comp.time, true) + parseInt(amount.text) * X * tmp_i * alt,
+                  positions[1].valueAtTime(comp.time, true) + parseInt(amount.text) * Y * tmp_i * alt]
               }
+              setPosition(selectedLayer, XYZarray, true, comp.time)
+              // 全てのキーフレームを更新
             } else {
-              for (var j = 1; j <= numKey; j++) {
-                var value = []
-                value.push(selectedLater.property("ADBE Transform Group").property("ADBE Position_0").valueAtTime(position.keyTime(j), true))
-                value.push(selectedLater.property("ADBE Transform Group").property("ADBE Position_1").valueAtTime(position.keyTime(j), true))
-                value.push(selectedLater.property("ADBE Transform Group").property("ADBE Position_2").valueAtTime(position.keyTime(j), true))
-                selectedLater.property("ADBE Transform Group").property("ADBE Position_0").setValueAtTime(position.keyTime(j), value[0] + parseInt(amount.text) * X * i * alt)
-                selectedLater.property("ADBE Transform Group").property("ADBE Position_1").setValueAtTime(position.keyTime(j), value[1] + parseInt(amount.text) * Y * i * alt)
-                if (selectedLater.threeDLayer) {
-                  selectedLater.property("ADBE Transform Group").property("ADBE Position_2").setValueAtTime(position.keyTime(j), value[2] + parseInt(amount.text) * Z * i * alt)
+              for (var k = 1; k <= numKeys[0]; k++) {
+                if (selectedLayer.threeDLayer) {
+                  var XYZarray = [
+                    positions[0].valueAtTime(positions[0].keyTime(k), true) + parseInt(amount.text) * X * tmp_i * alt,
+                    positions[1].valueAtTime(positions[1].keyTime(k), true) + parseInt(amount.text) * Y * tmp_i * alt,
+                    positions[2].valueAtTime(positions[2].keyTime(k), true) + parseInt(amount.text) * Z * tmp_i * alt]
+                } else {
+                  var XYZarray = [
+                    positions[0].valueAtTime(positions[0].keyTime(k), true) + parseInt(amount.text) * X * tmp_i * alt,
+                    positions[1].valueAtTime(positions[1].keyTime(k), true) + parseInt(amount.text) * Y * tmp_i * alt]
                 }
+                setPosition(selectedLayer, XYZarray, true, positions[0].keyTime(k))
               }
             }
           }
-        }
-      } else if (rotateBtn.value) {
-        // rotate
-        for (var i = 0; i < selectedLayers.length; i++) {
-          var selectedLater = selectedLayers[i]
-          var rotateX = selectedLater.property('ADBE Transform Group').property('ADBE Rotate X')
-          var rotateY = selectedLater.property('ADBE Transform Group').property('ADBE Rotate Y')
-          var rotateZ = selectedLater.property('ADBE Transform Group').property('ADBE Rotate Z')
+        } else if (rotateBtn.value) {
+          // rotate
+          var rotateX = selectedLayer.property('ADBE Transform Group').property('ADBE Rotate X')
+          var rotateY = selectedLayer.property('ADBE Transform Group').property('ADBE Rotate Y')
+          var rotateZ = selectedLayer.property('ADBE Transform Group').property('ADBE Rotate Z')
           var numKeyX = rotateX.numKeys
           var numKeyY = rotateY.numKeys
           var numKeyZ = rotateZ.numKeys
           if (numKeyX != 0) var nearestKeyTimeX = rotateX.keyTime(rotateX.nearestKeyIndex(comp.time))
           if (numKeyY != 0) var nearestKeyTimeY = rotateY.keyTime(rotateY.nearestKeyIndex(comp.time))
           if (numKeyZ != 0) var nearestKeyTimeZ = rotateZ.keyTime(rotateZ.nearestKeyIndex(comp.time))
-          if ((xbox.value && !selectedLater.threeDLayer) || (ybox.value && !selectedLater.threeDLayer)) selectedLater.threeDLayer = true
+          if ((xbox.value && !selectedLayer.threeDLayer) || (ybox.value && !selectedLayer.threeDLayer)) selectedLayer.threeDLayer = true
           // X
           if (xbox.value) {
             if (numKeyX == 0) {
               var value = rotateX.value
-              rotateX.setValue(value + parseInt(amount.text) * i * alt)
+              rotateX.setValue(value + parseInt(amount.text) * tmp_i * alt)
             } else if (nearestKeyTimeX - comp.time != 0 || keyState.ctrlKey) {
               var value = rotateX.valueAtTime(comp.time, true)
-              rotateX.setValueAtTime(comp.time, value + parseInt(amount.text) * i * alt)
+              rotateX.setValueAtTime(comp.time, value + parseInt(amount.text) * tmp_i * alt)
             } else {
               for (var j = 1; j <= numKeyX; j++) {
                 var value = rotateX.valueAtTime(rotateX.keyTime(j), true)
-                rotateX.setValueAtTime(rotateX.keyTime(j), value + parseInt(amount.text) * i * alt)
+                rotateX.setValueAtTime(rotateX.keyTime(j), value + parseInt(amount.text) * tmp_i * alt)
               }
             }
           }
@@ -251,14 +317,14 @@ function main(thisObj) {
           if (ybox.value) {
             if (numKeyY == 0) {
               var value = rotateY.value
-              rotateY.setValue(value + parseInt(amount.text) * i * alt)
+              rotateY.setValue(value + parseInt(amount.text) * tmp_i * alt)
             } else if (nearestKeyTimeY - comp.time != 0 || keyState.ctrlKey) {
               var value = rotateY.valueAtTime(comp.time, true)
-              rotateY.setValueAtTime(comp.time, value + parseInt(amount.text) * i * alt)
+              rotateY.setValueAtTime(comp.time, value + parseInt(amount.text) * tmp_i * alt)
             } else {
               for (var j = 1; j <= numKeyY; j++) {
                 var value = rotateY.valueAtTime(rotateY.keyTime(j), true)
-                rotateY.setValueAtTime(rotateY.keyTime(j), value + parseInt(amount.text) * i * alt)
+                rotateY.setValueAtTime(rotateY.keyTime(j), value + parseInt(amount.text) * tmp_i * alt)
               }
             }
           }
@@ -266,69 +332,64 @@ function main(thisObj) {
           if (zbox.value) {
             if (numKeyZ == 0) {
               var value = rotateZ.value
-              rotateZ.setValue(value + parseInt(amount.text) * i * alt)
+              rotateZ.setValue(value + parseInt(amount.text) * tmp_i * alt)
             } else if (nearestKeyTimeZ - comp.time != 0 || keyState.ctrlKey) {
               var value = rotateZ.valueAtTime(comp.time, true)
-              rotateZ.setValueAtTime(comp.time, value + parseInt(amount.text) * i * alt)
+              rotateZ.setValueAtTime(comp.time, value + parseInt(amount.text) * tmp_i * alt)
             } else {
               for (var j = 1; j <= numKeyZ; j++) {
                 var value = rotateZ.valueAtTime(rotateZ.keyTime(j), true)
-                rotateZ.setValueAtTime(rotateZ.keyTime(j), value + parseInt(amount.text) * i * alt)
-              }
-            }
-          }
-        }
-      } else {
-        // scale
-        var X = 0
-        var Y = 0
-        var Z = 0
-        if (xboxScale.value) X = 1
-        if (yboxScale.value) Y = 1
-        if (zboxScale.value) Z = 1
-        if (fixed.value == false) {
-          // 固定じゃない場合
-          for (var i = 0; i < selectedLayers.length; i++) {
-            var selectedLater = selectedLayers[i]
-            var scale = selectedLater.property('ADBE Transform Group').property('ADBE Scale')
-            var numKey = scale.numKeys
-            if (numKey != 0) var nearestKeyTime = scale.keyTime(scale.nearestKeyIndex(comp.time))
-            if (numKey == 0) {
-              var value = scale.value
-              scale.setValue([value[0] + parseInt(amount.text) * X * i * alt,
-              value[1] + parseInt(amount.text) * Y * i * alt, value[2] + parseInt(amount.text) * Z * i * alt])
-            } else if (nearestKeyTime - comp.time != 0 || keyState.ctrlKey) {
-              var value = scale.valueAtTime(comp.time, true)
-              scale.setValueAtTime(comp.time, [value[0] + parseInt(amount.text) * X * i * alt,
-              value[1] + parseInt(amount.text) * Y * i * alt, value[2] + parseInt(amount.text) * Z * i * alt])
-            } else {
-              for (var j = 1; j <= numKey; j++) {
-                var value = scale.valueAtTime(scale.keyTime(j), true)
-                scale.setValueAtTime(scale.keyTime(j), [value[0] + parseInt(amount.text) * X * i * alt,
-                value[1] + parseInt(amount.text) * Y * i * alt, value[2] + parseInt(amount.text) * Z * i * alt])
+                rotateZ.setValueAtTime(rotateZ.keyTime(j), value + parseInt(amount.text) * tmp_i * alt)
               }
             }
           }
         } else {
-          // Fixed(固定)の場合
-          for (var i = 0; i < selectedLayers.length; i++) {
-            var selectedLater = selectedLayers[i]
-            var scale = selectedLater.property('ADBE Transform Group').property('ADBE Scale')
+          // scale
+          var X = 0
+          var Y = 0
+          var Z = 0
+          if (xboxScale.value) X = 1
+          if (yboxScale.value) Y = 1
+          if (zboxScale.value) Z = 1
+          if (fixed.value == false) {
+            // 固定じゃない場合
+            var scale = selectedLayer.property('ADBE Transform Group').property('ADBE Scale')
             var numKey = scale.numKeys
             if (numKey != 0) var nearestKeyTime = scale.keyTime(scale.nearestKeyIndex(comp.time))
             if (numKey == 0) {
               var value = scale.value
-              scale.setValue([value[0] + parseInt(amount.text) * i * alt,
-              value[1] + parseInt(amount.text) * i * alt, value[2] + parseInt(amount.text) * i * alt])
+              scale.setValue([value[0] + parseInt(amount.text) * X * tmp_i * alt,
+              value[1] + parseInt(amount.text) * Y * tmp_i * alt, value[2] + parseInt(amount.text) * Z * tmp_i * alt])
             } else if (nearestKeyTime - comp.time != 0 || keyState.ctrlKey) {
               var value = scale.valueAtTime(comp.time, true)
-              scale.setValueAtTime(comp.time, [value[0] + parseInt(amount.text) * i * alt,
-              value[1] + parseInt(amount.text) * i * alt, value[2] + parseInt(amount.text) * i * alt])
+              scale.setValueAtTime(comp.time, [value[0] + parseInt(amount.text) * X * tmp_i * alt,
+              value[1] + parseInt(amount.text) * Y * tmp_i * alt, value[2] + parseInt(amount.text) * Z * tmp_i * alt])
             } else {
               for (var j = 1; j <= numKey; j++) {
                 var value = scale.valueAtTime(scale.keyTime(j), true)
-                scale.setValueAtTime(scale.keyTime(j), [value[0] + parseInt(amount.text) * i * alt,
-                value[1] + parseInt(amount.text) * i * alt, value[2] + parseInt(amount.text) * i * alt])
+                scale.setValueAtTime(scale.keyTime(j), [value[0] + parseInt(amount.text) * X * tmp_i * alt,
+                value[1] + parseInt(amount.text) * Y * tmp_i * alt, value[2] + parseInt(amount.text) * Z * tmp_i * alt])
+              }
+            }
+          } else {
+            // Fixed(固定)の場合
+            var selectedLayer = selectedLayers[i]
+            var scale = selectedLayer.property('ADBE Transform Group').property('ADBE Scale')
+            var numKey = scale.numKeys
+            if (numKey != 0) var nearestKeyTime = scale.keyTime(scale.nearestKeyIndex(comp.time))
+            if (numKey == 0) {
+              var value = scale.value
+              scale.setValue([value[0] + parseInt(amount.text) * tmp_i * alt,
+              value[1] + parseInt(amount.text) * tmp_i * alt, value[2] + parseInt(amount.text) * tmp_i * alt])
+            } else if (nearestKeyTime - comp.time != 0 || keyState.ctrlKey) {
+              var value = scale.valueAtTime(comp.time, true)
+              scale.setValueAtTime(comp.time, [value[0] + parseInt(amount.text) * tmp_i * alt,
+              value[1] + parseInt(amount.text) * tmp_i * alt, value[2] + parseInt(amount.text) * tmp_i * alt])
+            } else {
+              for (var j = 1; j <= numKey; j++) {
+                var value = scale.valueAtTime(scale.keyTime(j), true)
+                scale.setValueAtTime(scale.keyTime(j), [value[0] + parseInt(amount.text) * tmp_i * alt,
+                value[1] + parseInt(amount.text) * tmp_i * alt, value[2] + parseInt(amount.text) * tmp_i * alt])
               }
             }
           }
@@ -365,11 +426,11 @@ function main(thisObj) {
       if (positionBtn.value) {
         // position
         for (var i = 0; i < selectedLayers.length; i++) {
-          var selectedLater = selectedLayers[i]
-          var position = selectedLater.property('ADBE Transform Group').property('ADBE Position')
+          var selectedLayer = selectedLayers[i]
+          var position = selectedLayer.property('ADBE Transform Group').property('ADBE Position')
           var numKey = position.numKeys
           if (numKey != 0) var nearestKeyTime = position.keyTime(position.nearestKeyIndex(comp.time))
-          if (zbox.value && !selectedLater.threeDLayer) selectedLater.threeDLayer = true
+          if (zbox.value && !selectedLayer.threeDLayer) selectedLayer.threeDLayer = true
           var randX = generateRandomNumber() * 2 - 1
           var randY = generateRandomNumber() * 2 - 1
           var randZ = generateRandomNumber() * 2 - 1
@@ -394,34 +455,34 @@ function main(thisObj) {
             // 次元分割されている場合
             if (numKey == 0) {
               var value = []
-              value.push(selectedLater.property("ADBE Transform Group").property("ADBE Position_0").value)
-              value.push(selectedLater.property("ADBE Transform Group").property("ADBE Position_1").value)
-              value.push(selectedLater.property("ADBE Transform Group").property("ADBE Position_2").value)
-              selectedLater.property("ADBE Transform Group").property("ADBE Position_0").setValue(value[0] + parseInt(amount.text) * X * randX)
-              selectedLater.property("ADBE Transform Group").property("ADBE Position_1").setValue(value[1] + parseInt(amount.text) * Y * randY)
-              if (selectedLater.threeDLayer) {
-                selectedLater.property("ADBE Transform Group").property("ADBE Position_2").setValue(value[2] + parseInt(amount.text) * Z * randZ)
+              value.push(selectedLayer.property("ADBE Transform Group").property("ADBE Position_0").value)
+              value.push(selectedLayer.property("ADBE Transform Group").property("ADBE Position_1").value)
+              value.push(selectedLayer.property("ADBE Transform Group").property("ADBE Position_2").value)
+              selectedLayer.property("ADBE Transform Group").property("ADBE Position_0").setValue(value[0] + parseInt(amount.text) * X * randX)
+              selectedLayer.property("ADBE Transform Group").property("ADBE Position_1").setValue(value[1] + parseInt(amount.text) * Y * randY)
+              if (selectedLayer.threeDLayer) {
+                selectedLayer.property("ADBE Transform Group").property("ADBE Position_2").setValue(value[2] + parseInt(amount.text) * Z * randZ)
               }
             } else if (nearestKeyTime - comp.time != 0 || keyState.ctrlKey) {
               var value = []
-              value.push(selectedLater.property("ADBE Transform Group").property("ADBE Position_0").valueAtTime(comp.time, true))
-              value.push(selectedLater.property("ADBE Transform Group").property("ADBE Position_1").valueAtTime(comp.time, true))
-              value.push(selectedLater.property("ADBE Transform Group").property("ADBE Position_2").valueAtTime(comp.time, true))
-              selectedLater.property("ADBE Transform Group").property("ADBE Position_0").setValueAtTime(comp.time, value[0] + parseInt(amount.text) * X * randX)
-              selectedLater.property("ADBE Transform Group").property("ADBE Position_1").setValueAtTime(comp.time, value[1] + parseInt(amount.text) * Y * randY)
-              if (selectedLater.threeDLayer) {
-                selectedLater.property("ADBE Transform Group").property("ADBE Position_2").setValueAtTime(comp.time, value[2] + parseInt(amount.text) * Z * randZ)
+              value.push(selectedLayer.property("ADBE Transform Group").property("ADBE Position_0").valueAtTime(comp.time, true))
+              value.push(selectedLayer.property("ADBE Transform Group").property("ADBE Position_1").valueAtTime(comp.time, true))
+              value.push(selectedLayer.property("ADBE Transform Group").property("ADBE Position_2").valueAtTime(comp.time, true))
+              selectedLayer.property("ADBE Transform Group").property("ADBE Position_0").setValueAtTime(comp.time, value[0] + parseInt(amount.text) * X * randX)
+              selectedLayer.property("ADBE Transform Group").property("ADBE Position_1").setValueAtTime(comp.time, value[1] + parseInt(amount.text) * Y * randY)
+              if (selectedLayer.threeDLayer) {
+                selectedLayer.property("ADBE Transform Group").property("ADBE Position_2").setValueAtTime(comp.time, value[2] + parseInt(amount.text) * Z * randZ)
               }
             } else {
               for (var j = 1; j <= numKey; j++) {
                 var value = []
-                value.push(selectedLater.property("ADBE Transform Group").property("ADBE Position_0").valueAtTime(position.keyTime(j), true))
-                value.push(selectedLater.property("ADBE Transform Group").property("ADBE Position_1").valueAtTime(position.keyTime(j), true))
-                value.push(selectedLater.property("ADBE Transform Group").property("ADBE Position_2").valueAtTime(position.keyTime(j), true))
-                selectedLater.property("ADBE Transform Group").property("ADBE Position_0").setValueAtTime(position.keyTime(j), value[0] + parseInt(amount.text) * X * randX)
-                selectedLater.property("ADBE Transform Group").property("ADBE Position_1").setValueAtTime(position.keyTime(j), value[1] + parseInt(amount.text) * Y * randY)
-                if (selectedLater.threeDLayer) {
-                  selectedLater.property("ADBE Transform Group").property("ADBE Position_2").setValueAtTime(position.keyTime(j), value[2] + parseInt(amount.text) * Z * randZ)
+                value.push(selectedLayer.property("ADBE Transform Group").property("ADBE Position_0").valueAtTime(position.keyTime(j), true))
+                value.push(selectedLayer.property("ADBE Transform Group").property("ADBE Position_1").valueAtTime(position.keyTime(j), true))
+                value.push(selectedLayer.property("ADBE Transform Group").property("ADBE Position_2").valueAtTime(position.keyTime(j), true))
+                selectedLayer.property("ADBE Transform Group").property("ADBE Position_0").setValueAtTime(position.keyTime(j), value[0] + parseInt(amount.text) * X * randX)
+                selectedLayer.property("ADBE Transform Group").property("ADBE Position_1").setValueAtTime(position.keyTime(j), value[1] + parseInt(amount.text) * Y * randY)
+                if (selectedLayer.threeDLayer) {
+                  selectedLayer.property("ADBE Transform Group").property("ADBE Position_2").setValueAtTime(position.keyTime(j), value[2] + parseInt(amount.text) * Z * randZ)
                 }
               }
             }
@@ -430,17 +491,17 @@ function main(thisObj) {
       } else if (rotateBtn.value) {
         // rotate
         for (var i = 0; i < selectedLayers.length; i++) {
-          var selectedLater = selectedLayers[i]
-          var rotateX = selectedLater.property('ADBE Transform Group').property('ADBE Rotate X')
-          var rotateY = selectedLater.property('ADBE Transform Group').property('ADBE Rotate Y')
-          var rotateZ = selectedLater.property('ADBE Transform Group').property('ADBE Rotate Z')
+          var selectedLayer = selectedLayers[i]
+          var rotateX = selectedLayer.property('ADBE Transform Group').property('ADBE Rotate X')
+          var rotateY = selectedLayer.property('ADBE Transform Group').property('ADBE Rotate Y')
+          var rotateZ = selectedLayer.property('ADBE Transform Group').property('ADBE Rotate Z')
           var numKeyX = rotateX.numKeys
           var numKeyY = rotateY.numKeys
           var numKeyZ = rotateZ.numKeys
           if (numKeyX != 0) var nearestKeyTimeX = rotateX.keyTime(rotateX.nearestKeyIndex(comp.time))
           if (numKeyY != 0) var nearestKeyTimeY = rotateY.keyTime(rotateY.nearestKeyIndex(comp.time))
           if (numKeyZ != 0) var nearestKeyTimeZ = rotateZ.keyTime(rotateZ.nearestKeyIndex(comp.time))
-          if ((xbox.value && !selectedLater.threeDLayer) || (ybox.value && !selectedLater.threeDLayer)) selectedLater.threeDLayer = true
+          if ((xbox.value && !selectedLayer.threeDLayer) || (ybox.value && !selectedLayer.threeDLayer)) selectedLayer.threeDLayer = true
           // X
           if (xbox.value) {
             if (numKeyX == 0) {
@@ -498,8 +559,8 @@ function main(thisObj) {
         if (fixed.value == false) {
           // 固定じゃない場合
           for (var i = 0; i < selectedLayers.length; i++) {
-            var selectedLater = selectedLayers[i]
-            var scale = selectedLater.property('ADBE Transform Group').property('ADBE Scale')
+            var selectedLayer = selectedLayers[i]
+            var scale = selectedLayer.property('ADBE Transform Group').property('ADBE Scale')
             var numKey = scale.numKeys
             if (numKey != 0) var nearestKeyTime = scale.keyTime(scale.nearestKeyIndex(comp.time))
             if (numKey == 0) {
@@ -521,8 +582,8 @@ function main(thisObj) {
         } else {
           // Fixed(固定)の場合
           for (var i = 0; i < selectedLayers.length; i++) {
-            var selectedLater = selectedLayers[i]
-            var scale = selectedLater.property('ADBE Transform Group').property('ADBE Scale')
+            var selectedLayer = selectedLayers[i]
+            var scale = selectedLayer.property('ADBE Transform Group').property('ADBE Scale')
             var numKey = scale.numKeys
             if (numKey != 0) var nearestKeyTime = scale.keyTime(scale.nearestKeyIndex(comp.time))
             var randomNum = parseInt(amount.text) * (generateRandomNumber() * 2 - 1)
